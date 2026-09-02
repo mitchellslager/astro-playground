@@ -9,10 +9,14 @@
 		"dev": "astro dev --port 4200",
 		"build": "astro build",
 		"preview": "astro preview --port 4200",
-		"astro": "astro"
+		"astro": "astro",
+		"contentful:inspect": "node --env-file=.env scripts/contentful-inspect.mjs"
 	},
 	"dependencies": {
-		"astro": "^7.2.10"
+		"@contentful/rich-text-html-renderer": "^17.2.3",
+		"@contentful/rich-text-types": "^17.2.7",
+		"astro": "^7.2.10",
+		"contentful": "^11.12.9"
 	},
 	"allowScripts": {
 		"esbuild": true

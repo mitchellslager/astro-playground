@@ -1,0 +1,153 @@
+---
+import type { GetStaticPaths } from 'astro';
+import { getCollection, type CollectionEntry } from 'astro:content';
+import Layout from '../../layouts/Layout.astro';
+import { renderRichText } from '../../lib/rich-text';
+
+// Static output: one HTML file per entry, generated at build time.
+export const getStaticPaths = (async () => {
+	const posts = await getCollection('blog');
+	return posts.map((post) => ({
+		params: { id: post.id },
+		props: { post },
+	}));
+}) satisfies GetStaticPaths;
+
+const { post } = Astro.props as { post: CollectionEntry<'blog'> };
+const { title, date, author, coverImage, content, externalUrl } = post.data;
+
+const html = renderRichText(content);
+const formattedDate = date.toLocaleDateString('nl-NL', {
+	day: 'numeric',
+	month: 'long',
+	year: 'numeric',
+});
+---
+
+<Layout title={title}>
+	<cvgz-ds-layout inner-container="sm" spacing-top="md" spacing-bottom="lg">
+		{/* Breadcrumb clones its slotted elements into <li>s and inserts chevrons. */}
+		<cvgz-ds-breadcrumb>
+			<a class="cvgz-ds-link" href="/">Home</a>
+			<a class="cvgz-ds-link" href="/blog/">Blog</a>
+			<a class="cvgz-ds-link" href={`/blog/${post.id}/`} aria-current="page">{title}</a>
+		</cvgz-ds-breadcrumb>
+
+		<h1 class="cvgz-ds-h1">{title}</h1>
+
+		<div class="byline">
+			<img
+				class="byline__avatar"
+				src={`${author.picture.url}?w=72&h=72&fit=thumb&f=face&fm=webp`}
+				alt={author.name}
+				width="36"
+				height="36"
+				loading="lazy"
+			/>
+			<span class="cvgz-ds-label--small">{author.name}</span>
+			<span class="cvgz-ds-label--small" aria-hidden="true">·</span>
+			<time class="cvgz-ds-label--small" datetime={date.toISOString()}>{formattedDate}</time>
+		</div>
+
+		<img
+			class="cover"
+			src={`${coverImage.url}?w=1280&fm=webp`}
+			alt={coverImage.description || coverImage.title}
+			width={coverImage.width}
+			height={coverImage.height}
+		/>
+
+		<!-- Rich text is trusted, authored CMS content, so injecting the
+		rendered HTML is intended here. -->
+		<article class="rich-text" set:html={html} />
+
+		<div class="actions">
+			{
+				externalUrl && (
+					<cvgz-ds-link-cta
+						href={externalUrl}
+						icon-after="arrow-right"
+						target="_blank"
+						rel="noopener noreferrer"
+					>
+						Read at the original source
+					</cvgz-ds-link-cta>
+				)
+			}
+			<cvgz-ds-link-cta href="/blog/" icon-before="arrow-left">Back to blog</cvgz-ds-link-cta>
+		</div>
+	</cvgz-ds-layout>
+</Layout>
+
+<style>
+	.byline {
+		display: flex;
+		align-items: center;
+		gap: var(--sizing-2, 8px);
+		margin-bottom: var(--sizing-4, 16px);
+	}
+	.byline__avatar {
+		border-radius: 50%;
+	}
+	.cover {
+		width: 100%;
+		height: auto;
+		border-radius: var(--cvgz-ds-border-radius-md, 8px);
+		margin-bottom: var(--sizing-4, 16px);
+	}
+	.actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--sizing-4, 16px);
+		margin-top: var(--sizing-8, 32px);
+	}
+
+	/*
+	 * Rich-text HTML is injected, so it can't carry the .cvgz-ds-* utility
+	 * classes. Apply the same design tokens to the generated elements instead.
+	 */
+	.rich-text :global(p) {
+		font: var(--cvgz-ds-typography-body, 400 16px/1.5 Roboto-Regular, Roboto, sans-serif);
+		color: var(--cvgz-ds-text-text-body, #333);
+		padding: var(--cvgz-ds-paragraph-spacing-default, 1rem) 0;
+		margin: 0;
+	}
+	.rich-text :global(h2) {
+		font: var(--cvgz-ds-typography-h2, 600 20px/1.3 Asap-SemiBold, Asap, sans-serif);
+		color: var(--cvgz-ds-color-text-title, #333);
+		margin-bottom: var(--sizing-4, 16px);
+	}
+	.rich-text :global(h3) {
+		font: var(--cvgz-ds-typography-h3, 600 18px/1.3 Asap-SemiBold, Asap, sans-serif);
+		color: var(--cvgz-ds-color-text-title, #333);
+		margin-bottom: var(--sizing-2, 8px);
+	}
+	.rich-text :global(a) {
+		font: var(--cvgz-ds-link-typography-link-rest, 400 16px/1.5 Roboto-Regular, Roboto, sans-serif);
+		color: var(--cvgz-ds-color-text-links-rest, #454545);
+		text-decoration: underline;
+	}
+	.rich-text :global(img) {
+		max-width: 100%;
+		height: auto;
+		border-radius: var(--cvgz-ds-border-radius-md, 8px);
+	}
+	.rich-text :global(figure) {
+		margin-inline: 0;
+	}
+	.rich-text :global(blockquote) {
+		margin-inline: 0;
+		padding-left: var(--sizing-4, 16px);
+		border-left: 3px solid var(--cvgz-ds-color-border-default, #e4e4e7);
+	}
+	.rich-text :global(table) {
+		width: 100%;
+		border-collapse: collapse;
+	}
+	.rich-text :global(th),
+	.rich-text :global(td) {
+		padding: var(--sizing-2, 8px);
+		border: 1px solid var(--cvgz-ds-color-border-default, #e4e4e7);
+		text-align: left;
+	}
+</style>

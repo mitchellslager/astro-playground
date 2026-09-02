@@ -1,0 +1,49 @@
+---
+import { getCollection } from 'astro:content';
+import Layout from '../../layouts/Layout.astro';
+
+// getCollection() returns entries ordered by id, so sort explicitly —
+// the loader's `order` query does not survive into the content store.
+const posts = (await getCollection('blog')).sort(
+	(a, b) => b.data.date.getTime() - a.data.date.getTime()
+);
+
+const formatDate = (date: Date) =>
+	date.toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' });
+---
+
+<Layout title="Blog — from Contentful">
+	<cvgz-ds-layout inner-container="md" spacing-top="lg" spacing-bottom="lg">
+		<h1 class="cvgz-ds-h1">Blog</h1>
+		<p class="cvgz-ds-intro">
+			{posts.length} entr{posts.length === 1 ? 'y' : 'ies'} loaded from Contentful via the content
+			layer.
+		</p>
+
+		{
+			posts.length === 0 && (
+				<cvgz-ds-messagebar
+					message-type="warning"
+					label="No entries"
+					description="Check that the `post` content type in src/content.config.ts matches your space — run `pnpm contentful:inspect` to see what's there."
+				/>
+			)
+		}
+
+		{/* cvgz-ds-news renders its own anchor from `link`, and only shows the
+		image container when `data-image` is set. Slots: title, date, time, body. */}
+		{
+			posts.map((post) => (
+				<cvgz-ds-news
+					view="listview"
+					link={`/blog/${post.id}/`}
+					data-image={`${post.data.coverImage.url}?w=480&h=270&fit=fill&fm=webp`}
+				>
+					<span slot="title">{post.data.title}</span>
+					<span slot="date">{formatDate(post.data.date)}</span>
+					{post.data.excerpt}
+				</cvgz-ds-news>
+			))
+		}
+	</cvgz-ds-layout>
+</Layout>
