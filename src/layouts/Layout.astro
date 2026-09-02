@@ -1,12 +1,37 @@
+---
+interface Props {
+	title?: string;
+	/** Token folder on the CDN, e.g. `vgz`. Switch to restyle for another brand. */
+	brand?: string;
+	theme?: 'light' | 'dark';
+}
+
+const { title = 'Astro Basics', brand = 'vgz', theme = 'light' } = Astro.props;
+
+const DS_BASE = 'https://tst.cdn.vgz.nl/ui-assets/ds';
+---
+
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme={theme}>
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width" />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<link rel="icon" href="/favicon.ico" />
 		<meta name="generator" content={Astro.generator} />
-		<title>Astro Basics</title>
+		<title>{title}</title>
+
+		<!-- DS - Fonts -->
+		<link rel="stylesheet" type="text/css" href={`${DS_BASE}/assets/v/latest/build/assets/fonts.css`} />
+		<!-- DS - Design Tokens (the `brand` prop picks the token folder) -->
+		<link rel="stylesheet" href={`${DS_BASE}/tokens/v2/latest/css/${brand}/index.css`} class="ds-tokens-link" />
+		<!-- DS - CSS Utilities -->
+		<link rel="stylesheet" href={`${DS_BASE}/utils/css/styling.css`} />
+		<!-- DS - Components
+			Must load before any other script. This CDN build is for dev environments only. -->
+		<script is:inline type="module" src={`${DS_BASE}/components/v/latest/index.js`}></script>
+
+		<slot name="head" />
 	</head>
 	<body>
 		<slot />

@@ -1,0 +1,202 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+// Playground for the VGZ design-system web components. The DS bundle is loaded
+// from the CDN in Layout.astro; these elements are plain custom elements, so
+// Astro just renders the markup and the browser upgrades them client-side.
+const brands = ['vgz', 'unive', 'zekur', 'iza'];
+---
+
+<Layout title="Web components playground">
+	<main class="page">
+		<header>
+			<h1>Design system web components</h1>
+			<p>
+				Elements come from <code>cvgz-ds-*</code>. Attribute names below were taken from the
+				component sources on the CDN.
+			</p>
+		</header>
+
+		<section>
+			<h2>Token / theme switching</h2>
+			<p>Swaps the <code>.ds-tokens-link</code> stylesheet and the <code>data-theme</code> attribute.</p>
+			<div class="row">
+				{
+					brands.map((brand) => (
+						<cvgz-ds-button modifier="secondary" is-small data-brand={brand}>
+							{brand}
+						</cvgz-ds-button>
+					))
+				}
+				<cvgz-ds-button modifier="tertiary" is-small id="toggle-theme">Toggle light/dark</cvgz-ds-button>
+			</div>
+		</section>
+
+		<section>
+			<h2>Button</h2>
+			<p><code>modifier</code>, <code>icon-name-start</code>, <code>icon-name-end</code>, <code>is-small</code>, <code>is-loading</code>, <code>disabled</code>.</p>
+			<div class="row">
+				<cvgz-ds-button modifier="primary" icon-name-start="arrow-right">Go Unicorn!</cvgz-ds-button>
+				<cvgz-ds-button modifier="secondary">Secondary</cvgz-ds-button>
+				<cvgz-ds-button modifier="tertiary">Tertiary</cvgz-ds-button>
+				<cvgz-ds-button modifier="link">Link</cvgz-ds-button>
+			</div>
+			<div class="row">
+				<cvgz-ds-button modifier="primary" icon-name-end="arrow-right">Icon at end</cvgz-ds-button>
+				<cvgz-ds-button modifier="primary" is-small>Small</cvgz-ds-button>
+				<cvgz-ds-button modifier="primary" is-loading>Loading</cvgz-ds-button>
+				<cvgz-ds-button modifier="primary" disabled>Disabled</cvgz-ds-button>
+			</div>
+		</section>
+
+		<section>
+			<h2>Badge</h2>
+			<p>Takes <code>type</code> and <code>value</code>.</p>
+			<div class="row">
+				<cvgz-ds-badge value="3"></cvgz-ds-badge>
+				<cvgz-ds-badge value="12"></cvgz-ds-badge>
+			</div>
+		</section>
+
+		<section>
+			<h2>Form controls</h2>
+			<p>
+				<code>cvgz-ds-input</code> and <code>cvgz-ds-switch</code> wrap a native control passed
+				through the default slot, so normal form semantics and validation still apply.
+			</p>
+			<form id="demo-form" class="stack">
+				<cvgz-ds-input label="Email address" helptext="We only use this for the demo.">
+					<input type="email" name="email" required />
+				</cvgz-ds-input>
+
+				<cvgz-ds-input label="Date of birth" type="date">
+					<input type="date" name="dob" />
+				</cvgz-ds-input>
+
+				<cvgz-ds-switch label="Send me updates">
+					<input type="checkbox" name="updates" />
+				</cvgz-ds-switch>
+
+				<div class="row">
+					<cvgz-ds-button modifier="primary" type="submit">Submit</cvgz-ds-button>
+					<cvgz-ds-button modifier="secondary" type="reset">Reset</cvgz-ds-button>
+				</div>
+			</form>
+		</section>
+
+		<section>
+			<h2>Event log</h2>
+			<p>Confirms the elements upgraded and are dispatching events.</p>
+			<pre id="log">waiting for custom elements to be defined…</pre>
+		</section>
+	</main>
+</Layout>
+
+<script>
+	const log = document.querySelector<HTMLPreElement>('#log')!;
+	const lines: string[] = [];
+
+	const write = (message: string) => {
+		lines.unshift(`${new Date().toLocaleTimeString()}  ${message}`);
+		log.textContent = lines.slice(0, 12).join('\n');
+	};
+
+	// Report which elements the DS bundle actually registered.
+	const expected = ['cvgz-ds-button', 'cvgz-ds-badge', 'cvgz-ds-input', 'cvgz-ds-switch'];
+	Promise.all(expected.map((name) => customElements.whenDefined(name))).then(() =>
+		write(`defined: ${expected.join(', ')}`)
+	);
+
+	document.querySelectorAll('cvgz-ds-button').forEach((button) => {
+		button.addEventListener('click', () => write(`click on <cvgz-ds-button>: ${button.textContent?.trim()}`));
+	});
+
+	const form = document.querySelector<HTMLFormElement>('#demo-form')!;
+	form.addEventListener('input', (event) => {
+		const target = event.target as HTMLInputElement;
+		write(`input on ${target.name}: ${target.type === 'checkbox' ? target.checked : target.value}`);
+	});
+	form.addEventListener('submit', (event) => {
+		event.preventDefault();
+		write(`submit: ${new URLSearchParams(new FormData(form) as any)}`);
+	});
+
+	// Brand + theme switching.
+	const tokensLink = document.querySelector<HTMLLinkElement>('.ds-tokens-link')!;
+	document.querySelectorAll<HTMLElement>('[data-brand]').forEach((button) => {
+		button.addEventListener('click', () => {
+			const brand = button.dataset.brand!;
+			tokensLink.href = tokensLink.href.replace(/\/css\/[^/]+\/index\.css$/, `/css/${brand}/index.css`);
+			write(`brand tokens → ${brand}`);
+		});
+	});
+
+	document.querySelector('#toggle-theme')!.addEventListener('click', () => {
+		const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+		document.documentElement.dataset.theme = next;
+		write(`data-theme → ${next}`);
+	});
+</script>
+
+<style>
+	.page {
+		max-width: 56rem;
+		margin: 0 auto;
+		padding: 2rem 1.5rem 4rem;
+		font-family: var(--cvgz-ds-typography-font-family, system-ui, sans-serif);
+	}
+
+	section {
+		margin-block: 2.5rem;
+		padding-block-start: 1.5rem;
+		border-block-start: 1px solid #e4e4e7;
+	}
+
+	h1 {
+		margin-block-end: 0.25rem;
+	}
+
+	h2 {
+		margin-block-end: 0.25rem;
+		font-size: 1.125rem;
+	}
+
+	p {
+		margin-block: 0 1rem;
+		color: #52525b;
+	}
+
+	.row {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.75rem;
+		margin-block-end: 0.75rem;
+	}
+
+	.stack {
+		display: flex;
+		flex-direction: column;
+		gap: 1.25rem;
+		max-width: 28rem;
+	}
+
+	pre {
+		margin: 0;
+		padding: 0.75rem 1rem;
+		min-height: 6rem;
+		border-radius: 0.375rem;
+		background: #18181b;
+		color: #e4e4e7;
+		font-size: 0.8125rem;
+		line-height: 1.6;
+		white-space: pre-wrap;
+	}
+
+	code {
+		padding: 0.1em 0.35em;
+		border-radius: 0.25rem;
+		background: #f4f4f5;
+		font-size: 0.875em;
+	}
+</style>
